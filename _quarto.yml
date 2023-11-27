@@ -4,14 +4,6 @@ project:
 
 website:
   title: "web2"
-  navbar:
-    left:
-      - href: LWF_models.qmd
-        text: LWF Models
-      - href: R_functions.qmd
-        text: R Functions
-      - href: run_RTMB.qmd
-        text: Run RTMB
 
 format:
   html:
