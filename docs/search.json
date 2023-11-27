@@ -1,61 +1,5 @@
 [
   {
-    "objectID": "R_functions.html",
-    "href": "R_functions.html",
-    "title": "Description of R functions",
-    "section": "",
-    "text": "Description: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023).\nArguments\nmodel_name: name of model run (can be anything - character class)\ndata_file_name: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)\nsel_type_trap: functional form of selectivity (“logistic” or “lognormal”)\ngill_fleet: TRUE if there is a gillnet fleet in model\nrec_fleet: TRUE if there is a recreational fleet in model\npauly_M: TRUE if you want to calculate Pauly’s M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)\nM_init: NULL if initial M estimate is not estimating Pauly’s M, or else put value (numeric)\nrecruit_model: functional form for recruitment (“AR1” - autoregressive; “WN” - “white noise”, “RW” - random walk)\nValue: List that contains data necessary for RTMB model."
-  },
-  {
-    "objectID": "R_functions.html#prep_glam_data.r",
-    "href": "R_functions.html#prep_glam_data.r",
-    "title": "Description of R functions",
-    "section": "",
-    "text": "Description: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023).\nArguments\nmodel_name: name of model run (can be anything - character class)\ndata_file_name: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)\nsel_type_trap: functional form of selectivity (“logistic” or “lognormal”)\ngill_fleet: TRUE if there is a gillnet fleet in model\nrec_fleet: TRUE if there is a recreational fleet in model\npauly_M: TRUE if you want to calculate Pauly’s M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)\nM_init: NULL if initial M estimate is not estimating Pauly’s M, or else put value (numeric)\nrecruit_model: functional form for recruitment (“AR1” - autoregressive; “WN” - “white noise”, “RW” - random walk)\nValue: List that contains data necessary for RTMB model."
-  },
-  {
-    "objectID": "R_functions.html#rename_data.r",
-    "href": "R_functions.html#rename_data.r",
-    "title": "Description of R functions",
-    "section": "rename_data.r",
-    "text": "rename_data.r\nDescription: Converts names of data vectors/matrices from ADMB to RTMB (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023). This function is ran internally within prep_glam_pars.r.\nArguments\ndata: data from excel that includes all the sheets (this is extracted in prep_glam_pars.r)\nValue: Returns data set with names converted from Excel sheet (ADMB). This is used within prep_glam_pars.r."
-  },
-  {
-    "objectID": "R_functions.html#prep_glam_pars.r",
-    "href": "R_functions.html#prep_glam_pars.r",
-    "title": "Description of R functions",
-    "section": "prep_glam_pars.r",
-    "text": "prep_glam_pars.r\nDescription: Put initial parameter estimates in list to run for RTMB. Put “NULL” in the argument for the parameter is not being used in the model.\nArguments\nlog_sig: log scale sigma value used to convert rhos to SD; for now all errors\nlog_M: log scale natural mortality\nlog_q_trap: log scale catchability of trapnet fleet\nlog_q_gill: log scale catchability of gillnet fleet\nlog_q_rec: log scale catchability of recreational fleet\nlog_q_trap_dev: log scale catchability deviations of trapnet fleet\nlog_q_gill_dev: log scale catchability deviations of gillnet fleet\nlog_q_rec_dev: log scale catchability deviations of recreational fleet\nlog_sel_trap_p1: log scale selectivity parameter 1 for trapnet\nlog_sel_trap_p2: log scale selectivity parameter 2 for trapnet\nlog_sel_gill_p1: log scale selectivity parameter 1 for gillnet\nlog_sel_gill_p2: log scale selectivity parameter 2 for gillnet\nlog_sel_rec_p1: log scale selectivity parameter 1 for recreational\nlog_sel_rec_p2: log scale selectivity parameter 2 for recreational\nlog_sel_trap_dev: log scale selectivity (random walk) deviations of trapnet fleet\nlog_sel_gill_dev: log scale selectivity (random walk) deviations of gillnet fleet\nlog_sel_rec_dev: log scale selectivity (random walk) deviations of recreational fleet\nlog_pop_init: log scale initial population size scalar\nlog_recr_init: log scale initial recruitment\nlog_recr_avg: log scale average recruitment\nlog_recr_dev: log scale recruitment deviations\nacor: autocorrelation for recruitment deviations\nValue: Returns list of initial parameter estimates for the RTMB model."
-  },
-  {
-    "objectID": "R_functions.html#glam.r",
-    "href": "R_functions.html#glam.r",
-    "title": "Description of R functions",
-    "section": "glam.r",
-    "text": "glam.r\nDescription: The stock assessment model - contains all functions and equations to run the RTMB model. Note: the data list is not an argument but it needs to be defined within a variable called “data” that is a list before. This function runs within run_glam.r\nArguments\npars: list of initial estimates of parameters\nValue: Returns model estimates, parameters, and likelihood values (joint negative log likelihoods, components related to priors and process error, and components related to data and observation error)."
-  },
-  {
-    "objectID": "R_functions.html#run_glam.r",
-    "href": "R_functions.html#run_glam.r",
-    "title": "Description of R functions",
-    "section": "run_glam.r",
-    "text": "run_glam.r\nDescription: Runs GLAM with RTMB and nlminb. It includes the model run and results, model diagnostics, and paramter estimates (and SE).\nArguments\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nfixed_names: names of fixed parameters that will go in map argument of MakeADFun\nrand_names: names of random parameters that will go into random argument of MakeADFun\nhessian_run: run nlminb with hessian (after initial run without Hessian)\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nrun_newton: TRUE if use Newton steps to improve gradients (Warning: do not use this is the model is not converging or the gradients are too high (&gt; 0.1). This will only help if the gradient is close enough t the threshold of 1e-3)\nn_newton: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue: Returns list of model results and model diagnostics related to convergence and gradients and parameter estimates."
-  },
-  {
-    "objectID": "R_functions.html#run_retro.r",
-    "href": "R_functions.html#run_retro.r",
-    "title": "Description of R functions",
-    "section": "run_retro.r",
-    "text": "run_retro.r\nDescription: Runs retrospective analysis.\nArguments\nn_peel: number of peels to use in retrospective analysis\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nn_newtwon: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue: Returns retrospective analysis results (a list of each peel run)."
-  },
-  {
-    "objectID": "R_functions.html#run_peel.r",
-    "href": "R_functions.html#run_peel.r",
-    "title": "Description of R functions",
-    "section": "run_peel.r",
-    "text": "run_peel.r\nDescription: Runs each peel of retrospective analysis.\nArguments\npeel: number of years to take off\ninput: list of data and paramters based on numbers of years taken off for peel\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nn_newtwon: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue Returns results of one retrospetive analysis run. This function runs within run_retro.r."
-  },
-  {
     "objectID": "run_RTMB.html",
     "href": "run_RTMB.html",
     "title": "RTMB and GLAM walkthrough",
@@ -110,6 +54,62 @@
     "title": "RTMB and GLAM walkthrough",
     "section": "ADMB vs TMB names",
     "text": "ADMB vs TMB names"
+  },
+  {
+    "objectID": "R_functions.html",
+    "href": "R_functions.html",
+    "title": "Description of R functions",
+    "section": "",
+    "text": "Description: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023).\nArguments\nmodel_name: name of model run (can be anything - character class)\ndata_file_name: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)\nsel_type_trap: functional form of selectivity (“logistic” or “lognormal”)\ngill_fleet: TRUE if there is a gillnet fleet in model\nrec_fleet: TRUE if there is a recreational fleet in model\npauly_M: TRUE if you want to calculate Pauly’s M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)\nM_init: NULL if initial M estimate is not estimating Pauly’s M, or else put value (numeric)\nrecruit_model: functional form for recruitment (“AR1” - autoregressive; “WN” - “white noise”, “RW” - random walk)\nValue: List that contains data necessary for RTMB model."
+  },
+  {
+    "objectID": "R_functions.html#prep_glam_data.r",
+    "href": "R_functions.html#prep_glam_data.r",
+    "title": "Description of R functions",
+    "section": "",
+    "text": "Description: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023).\nArguments\nmodel_name: name of model run (can be anything - character class)\ndata_file_name: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)\nsel_type_trap: functional form of selectivity (“logistic” or “lognormal”)\ngill_fleet: TRUE if there is a gillnet fleet in model\nrec_fleet: TRUE if there is a recreational fleet in model\npauly_M: TRUE if you want to calculate Pauly’s M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)\nM_init: NULL if initial M estimate is not estimating Pauly’s M, or else put value (numeric)\nrecruit_model: functional form for recruitment (“AR1” - autoregressive; “WN” - “white noise”, “RW” - random walk)\nValue: List that contains data necessary for RTMB model."
+  },
+  {
+    "objectID": "R_functions.html#rename_data.r",
+    "href": "R_functions.html#rename_data.r",
+    "title": "Description of R functions",
+    "section": "rename_data.r",
+    "text": "rename_data.r\nDescription: Converts names of data vectors/matrices from ADMB to RTMB (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023). This function is ran internally within prep_glam_pars.r.\nArguments\ndata: data from excel that includes all the sheets (this is extracted in prep_glam_pars.r)\nValue: Returns data set with names converted from Excel sheet (ADMB). This is used within prep_glam_pars.r."
+  },
+  {
+    "objectID": "R_functions.html#prep_glam_pars.r",
+    "href": "R_functions.html#prep_glam_pars.r",
+    "title": "Description of R functions",
+    "section": "prep_glam_pars.r",
+    "text": "prep_glam_pars.r\nDescription: Put initial parameter estimates in list to run for RTMB. Put “NULL” in the argument for the parameter is not being used in the model.\nArguments\nlog_sig: log scale sigma value used to convert rhos to SD; for now all errors\nlog_M: log scale natural mortality\nlog_q_trap: log scale catchability of trapnet fleet\nlog_q_gill: log scale catchability of gillnet fleet\nlog_q_rec: log scale catchability of recreational fleet\nlog_q_trap_dev: log scale catchability deviations of trapnet fleet\nlog_q_gill_dev: log scale catchability deviations of gillnet fleet\nlog_q_rec_dev: log scale catchability deviations of recreational fleet\nlog_sel_trap_p1: log scale selectivity parameter 1 for trapnet\nlog_sel_trap_p2: log scale selectivity parameter 2 for trapnet\nlog_sel_gill_p1: log scale selectivity parameter 1 for gillnet\nlog_sel_gill_p2: log scale selectivity parameter 2 for gillnet\nlog_sel_rec_p1: log scale selectivity parameter 1 for recreational\nlog_sel_rec_p2: log scale selectivity parameter 2 for recreational\nlog_sel_trap_dev: log scale selectivity (random walk) deviations of trapnet fleet\nlog_sel_gill_dev: log scale selectivity (random walk) deviations of gillnet fleet\nlog_sel_rec_dev: log scale selectivity (random walk) deviations of recreational fleet\nlog_pop_init: log scale initial population size scalar\nlog_recr_init: log scale initial recruitment\nlog_recr_avg: log scale average recruitment\nlog_recr_dev: log scale recruitment deviations\nacor: autocorrelation for recruitment deviations\nValue: Returns list of initial parameter estimates for the RTMB model."
+  },
+  {
+    "objectID": "R_functions.html#glam.r",
+    "href": "R_functions.html#glam.r",
+    "title": "Description of R functions",
+    "section": "glam.r",
+    "text": "glam.r\nDescription: The stock assessment model - contains all functions and equations to run the RTMB model. Note: the data list is not an argument but it needs to be defined within a variable called “data” that is a list before. This function runs within run_glam.r\nArguments\npars: list of initial estimates of parameters\nValue: Returns model estimates, parameters, and likelihood values (joint negative log likelihoods, components related to priors and process error, and components related to data and observation error)."
+  },
+  {
+    "objectID": "R_functions.html#run_glam.r",
+    "href": "R_functions.html#run_glam.r",
+    "title": "Description of R functions",
+    "section": "run_glam.r",
+    "text": "run_glam.r\nDescription: Runs GLAM with RTMB and nlminb. It includes the model run and results, model diagnostics, and paramter estimates (and SE).\nArguments\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nfixed_names: names of fixed parameters that will go in map argument of MakeADFun\nrand_names: names of random parameters that will go into random argument of MakeADFun\nhessian_run: run nlminb with hessian (after initial run without Hessian)\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nrun_newton: TRUE if use Newton steps to improve gradients (Warning: do not use this is the model is not converging or the gradients are too high (&gt; 0.1). This will only help if the gradient is close enough t the threshold of 1e-3)\nn_newton: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue: Returns list of model results and model diagnostics related to convergence and gradients and parameter estimates."
+  },
+  {
+    "objectID": "R_functions.html#run_retro.r",
+    "href": "R_functions.html#run_retro.r",
+    "title": "Description of R functions",
+    "section": "run_retro.r",
+    "text": "run_retro.r\nDescription: Runs retrospective analysis.\nArguments\nn_peel: number of peels to use in retrospective analysis\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nn_newtwon: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue: Returns retrospective analysis results (a list of each peel run)."
+  },
+  {
+    "objectID": "R_functions.html#run_peel.r",
+    "href": "R_functions.html#run_peel.r",
+    "title": "Description of R functions",
+    "section": "run_peel.r",
+    "text": "run_peel.r\nDescription: Runs each peel of retrospective analysis.\nArguments\npeel: number of years to take off\ninput: list of data and paramters based on numbers of years taken off for peel\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nn_newtwon: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue Returns results of one retrospetive analysis run. This function runs within run_retro.r."
   },
   {
     "objectID": "LWF_models.html",
