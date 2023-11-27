@@ -1,0 +1,160 @@
+---
+title: "Description of R functions"
+format:
+  html:
+    toc: true
+    css: "https://qfcatmsu.github.io/css/presStyle.css"
+editor: visual
+---
+
+## prep_glam_data.r {#prep_glam_data.r}
+
+**Description**: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook's data sheet as a template - MI4_LWF_DAT_10_23_2023).
+
+**Arguments**
+
+`model_name`: name of model run (can be anything - character class)
+
+`data_file_name`: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)
+
+`sel_type_trap`: functional form of selectivity ("logistic" or "lognormal")
+
+`gill_fleet`: TRUE if there is a gillnet fleet in model
+
+`rec_fleet`: TRUE if there is a recreational fleet in model
+
+`pauly_M`: TRUE if you want to calculate Pauly's M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)
+
+`M_init`: NULL if initial M estimate is not estimating Pauly's M, or else put value (numeric)
+
+`recruit_model`: functional form for recruitment ("AR1" - autoregressive; "WN" - "white noise", "RW" - random walk)
+
+**Value**: List that contains data necessary for RTMB model.
+
+## rename_data.r
+
+**Description**: Converts names of data vectors/matrices from ADMB to RTMB (I followed B. Rook's data sheet as a template - MI4_LWF_DAT_10_23_2023). This function is ran internally within [prep_glam_pars.r](#prep_glam_data.r).
+
+**Arguments**
+
+`data`: data from excel that includes all the sheets (this is extracted in [prep_glam_pars.r](#prep_glam_data.r))
+
+**Value**: Returns data set with names converted from Excel sheet (ADMB). This is used within [prep_glam_pars.r](#prep_glam_data.r).
+
+## prep_glam_pars.r
+
+**Description**: Put initial parameter estimates in list to run for RTMB. Put "NULL" in the argument for the parameter is not being used in the model.
+
+**Arguments**
+
+`log_sig`: log scale sigma value used to convert rhos to SD; for now all errors
+
+`log_M`: log scale natural mortality
+
+`log_q_trap`: log scale catchability of trapnet fleet
+
+`log_q_gill`: log scale catchability of gillnet fleet
+
+`log_q_rec`: log scale catchability of recreational fleet
+
+`log_q_trap_dev`: log scale catchability deviations of trapnet fleet
+
+`log_q_gill_dev`: log scale catchability deviations of gillnet fleet
+
+`log_q_rec_dev`: log scale catchability deviations of recreational fleet
+
+`log_sel_trap_p1`: log scale selectivity parameter 1 for trapnet
+
+`log_sel_trap_p2`: log scale selectivity parameter 2 for trapnet
+
+`log_sel_gill_p1`: log scale selectivity parameter 1 for gillnet
+
+`log_sel_gill_p2`: log scale selectivity parameter 2 for gillnet
+
+`log_sel_rec_p1`: log scale selectivity parameter 1 for recreational
+
+`log_sel_rec_p2`: log scale selectivity parameter 2 for recreational
+
+`log_sel_trap_dev`: log scale selectivity (random walk) deviations of trapnet fleet
+
+`log_sel_gill_dev`: log scale selectivity (random walk) deviations of gillnet fleet
+
+`log_sel_rec_dev`: log scale selectivity (random walk) deviations of recreational fleet
+
+`log_pop_init`: log scale initial population size scalar
+
+`log_recr_init`: log scale initial recruitment
+
+`log_recr_avg`: log scale average recruitment
+
+`log_recr_dev`: log scale recruitment deviations
+
+`acor`: autocorrelation for recruitment deviations
+
+**Value**: Returns list of initial parameter estimates for the RTMB model.
+
+## glam.r
+
+**Description**: The stock assessment model - contains all functions and equations to run the RTMB model. Note: the data list is not an argument but it needs to be defined within a variable called "data" that is a list before. This function runs within [run_glam.r](#run_glam.r)
+
+**Arguments**
+
+`pars`: list of initial estimates of parameters
+
+**Value**: Returns model estimates, parameters, and likelihood values (joint negative log likelihoods, components related to priors and process error, and components related to data and observation error).
+
+## run_glam.r {#run_glam.r}
+
+**Description**: Runs GLAM with RTMB and nlminb. It includes the model run and results, model diagnostics, and paramter estimates (and SE).
+
+**Arguments**
+
+`nlminb_control`: (same as nlminb argument) Possible control options can be found [here](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/nlminb).
+
+`fixed_names`: names of fixed parameters that will go in map argument of MakeADFun
+
+`rand_names`: names of random parameters that will go into random argument of MakeADFun
+
+`hessian_run`: run nlminb with hessian (after initial run without Hessian)
+
+`report_sdrep`: use sdreport from TMB, get standard errors for parameters
+
+`run_newton`: TRUE if use Newton steps to improve gradients (*Warning*: do not use this is the model is not converging or the gradients are too high (\> 0.1). This will only help if the gradient is close enough t the threshold of 1e-3)
+
+`n_newton`: number of Newton steps (recommended max = 3, does not really improve beyond that)
+
+**Value**: Returns list of model results and model diagnostics related to convergence and gradients and parameter estimates.
+
+## run_retro.r {#run_retro.r}
+
+**Description**: Runs retrospective analysis.
+
+**Arguments**
+
+`n_peel`: number of peels to use in retrospective analysis
+
+`nlminb_control`: (same as nlminb argument) Possible control options can be found [here](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/nlminb).
+
+`report_sdrep`: use sdreport from TMB, get standard errors for parameters
+
+`n_newtwon`: number of Newton steps (recommended max = 3, does not really improve beyond that)
+
+**Value**: Returns retrospective analysis results (a list of each peel run).
+
+## run_peel.r
+
+**Description**: Runs each peel of retrospective analysis.
+
+**Arguments**
+
+`peel`: number of years to take off
+
+`input`: list of data and paramters based on numbers of years taken off for peel
+
+`nlminb_control`: (same as nlminb argument) Possible control options can be found [here](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/nlminb).
+
+`report_sdrep`: use sdreport from TMB, get standard errors for parameters
+
+`n_newtwon`: number of Newton steps (recommended max = 3, does not really improve beyond that)
+
+**Value** Returns results of one retrospetive analysis run. This function runs within [run_retro.r](#run_retro.r).

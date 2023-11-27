@@ -1,0 +1,184 @@
+[
+  {
+    "objectID": "R_functions.html",
+    "href": "R_functions.html",
+    "title": "Description of R functions",
+    "section": "",
+    "text": "Description: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023).\nArguments\nmodel_name: name of model run (can be anything - character class)\ndata_file_name: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)\nsel_type_trap: functional form of selectivity (“logistic” or “lognormal”)\ngill_fleet: TRUE if there is a gillnet fleet in model\nrec_fleet: TRUE if there is a recreational fleet in model\npauly_M: TRUE if you want to calculate Pauly’s M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)\nM_init: NULL if initial M estimate is not estimating Pauly’s M, or else put value (numeric)\nrecruit_model: functional form for recruitment (“AR1” - autoregressive; “WN” - “white noise”, “RW” - random walk)\nValue: List that contains data necessary for RTMB model."
+  },
+  {
+    "objectID": "R_functions.html#prep_glam_data.r",
+    "href": "R_functions.html#prep_glam_data.r",
+    "title": "Description of R functions",
+    "section": "",
+    "text": "Description: Converts data from Excel to R. The data for the RTMB model needs to be in certain format (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023).\nArguments\nmodel_name: name of model run (can be anything - character class)\ndata_file_name: name of Excel sheet with data (must include all sheets - in_singles, in_watage, in_latage, in_mat, in_other, in_obs_pat/g/r)\nsel_type_trap: functional form of selectivity (“logistic” or “lognormal”)\ngill_fleet: TRUE if there is a gillnet fleet in model\nrec_fleet: TRUE if there is a recreational fleet in model\npauly_M: TRUE if you want to calculate Pauly’s M as a prior (needs parameters h2o_t, linf, and vbk - incorporate in in_singles Excel sheet)\nM_init: NULL if initial M estimate is not estimating Pauly’s M, or else put value (numeric)\nrecruit_model: functional form for recruitment (“AR1” - autoregressive; “WN” - “white noise”, “RW” - random walk)\nValue: List that contains data necessary for RTMB model."
+  },
+  {
+    "objectID": "R_functions.html#rename_data.r",
+    "href": "R_functions.html#rename_data.r",
+    "title": "Description of R functions",
+    "section": "rename_data.r",
+    "text": "rename_data.r\nDescription: Converts names of data vectors/matrices from ADMB to RTMB (I followed B. Rook’s data sheet as a template - MI4_LWF_DAT_10_23_2023). This function is ran internally within prep_glam_pars.r.\nArguments\ndata: data from excel that includes all the sheets (this is extracted in prep_glam_pars.r)\nValue: Returns data set with names converted from Excel sheet (ADMB). This is used within prep_glam_pars.r."
+  },
+  {
+    "objectID": "R_functions.html#prep_glam_pars.r",
+    "href": "R_functions.html#prep_glam_pars.r",
+    "title": "Description of R functions",
+    "section": "prep_glam_pars.r",
+    "text": "prep_glam_pars.r\nDescription: Put initial parameter estimates in list to run for RTMB. Put “NULL” in the argument for the parameter is not being used in the model.\nArguments\nlog_sig: log scale sigma value used to convert rhos to SD; for now all errors\nlog_M: log scale natural mortality\nlog_q_trap: log scale catchability of trapnet fleet\nlog_q_gill: log scale catchability of gillnet fleet\nlog_q_rec: log scale catchability of recreational fleet\nlog_q_trap_dev: log scale catchability deviations of trapnet fleet\nlog_q_gill_dev: log scale catchability deviations of gillnet fleet\nlog_q_rec_dev: log scale catchability deviations of recreational fleet\nlog_sel_trap_p1: log scale selectivity parameter 1 for trapnet\nlog_sel_trap_p2: log scale selectivity parameter 2 for trapnet\nlog_sel_gill_p1: log scale selectivity parameter 1 for gillnet\nlog_sel_gill_p2: log scale selectivity parameter 2 for gillnet\nlog_sel_rec_p1: log scale selectivity parameter 1 for recreational\nlog_sel_rec_p2: log scale selectivity parameter 2 for recreational\nlog_sel_trap_dev: log scale selectivity (random walk) deviations of trapnet fleet\nlog_sel_gill_dev: log scale selectivity (random walk) deviations of gillnet fleet\nlog_sel_rec_dev: log scale selectivity (random walk) deviations of recreational fleet\nlog_pop_init: log scale initial population size scalar\nlog_recr_init: log scale initial recruitment\nlog_recr_avg: log scale average recruitment\nlog_recr_dev: log scale recruitment deviations\nacor: autocorrelation for recruitment deviations\nValue: Returns list of initial parameter estimates for the RTMB model."
+  },
+  {
+    "objectID": "R_functions.html#glam.r",
+    "href": "R_functions.html#glam.r",
+    "title": "Description of R functions",
+    "section": "glam.r",
+    "text": "glam.r\nDescription: The stock assessment model - contains all functions and equations to run the RTMB model. Note: the data list is not an argument but it needs to be defined within a variable called “data” that is a list before. This function runs within run_glam.r\nArguments\npars: list of initial estimates of parameters\nValue: Returns model estimates, parameters, and likelihood values (joint negative log likelihoods, components related to priors and process error, and components related to data and observation error)."
+  },
+  {
+    "objectID": "R_functions.html#run_glam.r",
+    "href": "R_functions.html#run_glam.r",
+    "title": "Description of R functions",
+    "section": "run_glam.r",
+    "text": "run_glam.r\nDescription: Runs GLAM with RTMB and nlminb. It includes the model run and results, model diagnostics, and paramter estimates (and SE).\nArguments\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nfixed_names: names of fixed parameters that will go in map argument of MakeADFun\nrand_names: names of random parameters that will go into random argument of MakeADFun\nhessian_run: run nlminb with hessian (after initial run without Hessian)\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nrun_newton: TRUE if use Newton steps to improve gradients (Warning: do not use this is the model is not converging or the gradients are too high (&gt; 0.1). This will only help if the gradient is close enough t the threshold of 1e-3)\nn_newton: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue: Returns list of model results and model diagnostics related to convergence and gradients and parameter estimates."
+  },
+  {
+    "objectID": "R_functions.html#run_retro.r",
+    "href": "R_functions.html#run_retro.r",
+    "title": "Description of R functions",
+    "section": "run_retro.r",
+    "text": "run_retro.r\nDescription: Runs retrospective analysis.\nArguments\nn_peel: number of peels to use in retrospective analysis\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nn_newtwon: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue: Returns retrospective analysis results (a list of each peel run)."
+  },
+  {
+    "objectID": "R_functions.html#run_peel.r",
+    "href": "R_functions.html#run_peel.r",
+    "title": "Description of R functions",
+    "section": "run_peel.r",
+    "text": "run_peel.r\nDescription: Runs each peel of retrospective analysis.\nArguments\npeel: number of years to take off\ninput: list of data and paramters based on numbers of years taken off for peel\nnlminb_control: (same as nlminb argument) Possible control options can be found here.\nreport_sdrep: use sdreport from TMB, get standard errors for parameters\nn_newtwon: number of Newton steps (recommended max = 3, does not really improve beyond that)\nValue Returns results of one retrospetive analysis run. This function runs within run_retro.r."
+  },
+  {
+    "objectID": "run_RTMB.html",
+    "href": "run_RTMB.html",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "",
+    "text": "Since this is not a R package, each necessary R script will need to be sourced.\n\nlibrary(RTMB)\n# for plotting\n# devtools::install_github(\"QFCatMSU/gg-qfc\")\nlibrary(ggqfc)\nlibrary(tidyverse)\nlibrary(ggplot2)\nlibrary(here) # used to source R scripts\n# otherwise, can just use (\"R/script_name\") is using R projects\n\n# R scripts for running GLAM (see )\nsource(here(\"R\", \"glam.R\"))\nsource(here(\"R\", \"run_glam.R\"))\nsource(here(\"R\", \"check_convergence.R\"))\nsource(here(\"R\", \"rename_data.R\"))\nsource(here(\"R\", \"prep_glam_data.R\"))\nsource(here(\"R\", \"prep_glam_pars.R\"))\nsource(here(\"R\", \"run_retro.R\"))\nsource(here(\"R\", \"run_peel.R\"))"
+  },
+  {
+    "objectID": "run_RTMB.html#load-packages-and-source-r-scripts",
+    "href": "run_RTMB.html#load-packages-and-source-r-scripts",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "",
+    "text": "Since this is not a R package, each necessary R script will need to be sourced.\n\nlibrary(RTMB)\n# for plotting\n# devtools::install_github(\"QFCatMSU/gg-qfc\")\nlibrary(ggqfc)\nlibrary(tidyverse)\nlibrary(ggplot2)\nlibrary(here) # used to source R scripts\n# otherwise, can just use (\"R/script_name\") is using R projects\n\n# R scripts for running GLAM (see )\nsource(here(\"R\", \"glam.R\"))\nsource(here(\"R\", \"run_glam.R\"))\nsource(here(\"R\", \"check_convergence.R\"))\nsource(here(\"R\", \"rename_data.R\"))\nsource(here(\"R\", \"prep_glam_data.R\"))\nsource(here(\"R\", \"prep_glam_pars.R\"))\nsource(here(\"R\", \"run_retro.R\"))\nsource(here(\"R\", \"run_peel.R\"))"
+  },
+  {
+    "objectID": "run_RTMB.html#read-in-data",
+    "href": "run_RTMB.html#read-in-data",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "Read in data",
+    "text": "Read in data\nIf your data is within a Excel sheet, run prep_glam_data.r. This will convert the data from the Excel sheet to a format that can be for RTMB. It also converts the names from ADMB to RTMB.\n\ndata_file_name = \"MI4_LWF_DAT_10_23_2023\"\ndata = prep_glam_data(model_name = \"MI4\",\n                    data_file_name = data_file_name,\n                    sel_type_trap = \"logistic\",\n                    gill_fleet = TRUE,\n                    rec_fleet = FALSE,\n                    pauly_M = TRUE,\n                    recruit_model = \"AR1\")\n\n(In progress) from ADMB .dat file\nFor this demostration, we’ll use the simulated data set (WF_sim_data.Rdata).\n\nload(here(\"data\", \"WF_sim_data.Rdata\"))"
+  },
+  {
+    "objectID": "run_RTMB.html#define-parameters",
+    "href": "run_RTMB.html#define-parameters",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "Define parameters",
+    "text": "Define parameters\nUse prep_glam_pars.r to set up initial estimates for parameters. If a parameter is not being used in your model, put “NULL” in the argument.\n\npars = prep_glam_pars(log_sig = -2,\n                        log_M = data$log_M_init,\n                        log_q_trap = -5,\n                        log_q_gill = -5,\n                        log_q_rec = NULL,\n                        log_q_trap_dev = numeric(data$n_years - 1),\n                        log_q_gill_dev = numeric(data$n_years - 1),\n                        log_q_rec_dev = NULL,\n                        log_sel_trap_p1 = 6.06,\n                        log_sel_trap_p2 = -2.9,\n                        log_sel_gill_p1 = -2.1,\n                        log_sel_gill_p2 = 1.82,\n                        log_sel_rec_p1 = NULL,\n                        log_sel_rec_p2 = NULL,\n                        log_sel_trap_dev = numeric(data$n_years - 1),\n                        log_sel_gill_dev = numeric(data$n_years - 1),\n                        log_sel_rec_dev = NULL,\n                        log_pop_init = rep(9, 4),\n                        log_recr_init = 12,\n                        log_recr_avg = 12,\n                        log_recr_dev = numeric(data$n_years - 1),\n                        acor = 0.5\n                        )"
+  },
+  {
+    "objectID": "run_RTMB.html#set-up-model-run",
+    "href": "run_RTMB.html#set-up-model-run",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "Set up model run",
+    "text": "Set up model run\nNotice that the data and pars lists are not in the argument of run_glam.r. This is how it is set up for RTMB. RTMB will pick up the list names based on what is defined within the RTMB function. You cannot use other names for the data list and parameters list. (data and pars).\nYou use run_glam.r to conduct a model run. nlminb is being used to run RTMB. You can define the control list, which can help with improving model runs (e.g., increasing number of iterations; description is here).\n[hessian]\nYou can also run Newton steps, which helps with improving the gradient. Warning: use this only if the maximum gradient is close enough to the tolerance/threshold of convergence (max gradient &lt; 1e-3). This will not help if the model is not converged or the maximum gradient is too high (max gradient &gt; 0.1). Typically, three Newton steps (n_newton = 3) are recommended since they do not improve the gradients beyond that.\n[fixed, random]\n\nres = run_glam(nlminb_control = list(\n                      eval.max = 1e4,\n                      iter.max = 1e4\n                    ),\n                    hessian_run = FALSE,\n                    run_newton = TRUE,\n                    n_newton = 3,\n                    fixed_names = NULL,\n                    rand_names = NULL)\n\nModel diagnostics consistent with convergence.\n\n\n[1] \"Standard errors for some parameter estimates are high, consider checking this!\"\n\n\n\nMessages\n\nModel convergence: If the model did not converge, a warning will print: “Model did not converge!”. If the model has good gradients, the hessian is invertible, and all the parameters are identifiable, then this will appear: “Model diagnostics consistent with convergence.”\nHigh gradients: If the maximum gradient is too high (&gt; 1e-3), a warning will print: “Gradients are high, please improve optimization!”. If there are any parameters that do not meet this threshold, then a list of “bad” parameters will be given in res$check$whichbad_param.\nHessian: If there are any NaNs in the Hessian matrix, then the hessian is not invertible [?] and the model has not converged. It will print: “The hessian was not invertible”.\nEigen: Parameters are considered identifiable… [?] If paramters are not identifiable, the hessian (and standard error) cannot be estimated for that parameter and the model has failed to converge. Sometimes, fixing the non-identifiable parameter improves the model run. Warning: This check will only run if the gradients met the threshold. It will not run if there are bad gradients.\nStandard error check: If the standard errors for the parameter estimates are high, a warning will print: “Standard errors for some parameter estimates are high, consider checking this!.” This does not stop the model run, but considerations should be made to check the parameter estimates and rerun the model if the standard errors are unreasonable.\n\n\n# look if the model is converged and well estimated\ncheck = res$check\ncheck$convergence # 1 - non convergence; 0 - convergence\n\n[1] 0\n\ncheck$message # type of convergence (relative is fine as long as the other checks below are good)\n\n[1] \"both X-convergence and relative convergence (5)\"\n\ncheck$max_gradient # maximum gradient\n\n[1] 4.203952e-09\n\ncheck$whichbad_params # prints out which parameters do not meet threshold (1e-3). This should be NULL if there are no issues\n\nNULL\n\ncheck$whichbad_eigen # prints out which parameters have bad eigen values. This should be NULL if there are no issues\n\nNULL\n\ncheck$sdcheck # prints out which parameters have high standard errors\n\n                      Estimate Std. Error\nlog_q_trap_dev    0.0041760824 0.14007472\nlog_q_trap_dev    0.0255956564 0.14286093\nlog_q_trap_dev   -0.0638237008 0.13840200\nlog_q_trap_dev   -0.0279886206 0.13930335\nlog_q_trap_dev   -0.0407167409 0.13750907\nlog_q_trap_dev    0.0639471647 0.13604435\nlog_q_trap_dev    0.0677741161 0.14223954\nlog_q_gill_dev   -0.0293278735 0.14057240\nlog_sel_trap_dev  0.0053422601 0.01170065\nlog_sel_trap_dev  0.0001868108 0.01173908\nlog_sel_trap_dev -0.0001321034 0.01166746\nlog_sel_trap_dev  0.0056652042 0.01148095\nlog_sel_trap_dev  0.0031547256 0.01143585\nlog_sel_trap_dev -0.0029734947 0.01121752\nlog_sel_trap_dev  0.0006690528 0.01104473\nlog_sel_trap_dev  0.0011234768 0.01090512\nlog_sel_trap_dev  0.0010263762 0.01094957\nlog_sel_trap_dev -0.0005736797 0.01103460\nlog_sel_trap_dev  0.0030879979 0.01110054\nlog_sel_trap_dev  0.0029875584 0.01118166\nlog_sel_trap_dev -0.0054922223 0.01117585\nlog_sel_trap_dev -0.0026360439 0.01100729\nlog_sel_trap_dev -0.0028433863 0.01111317\nlog_sel_trap_dev  0.0045828442 0.01149218\nlog_sel_trap_dev  0.0045828442 0.01149218\nlog_sel_trap_dev -0.0028890112 0.01129528\nlog_sel_trap_dev -0.0047291422 0.01141617\nlog_sel_trap_dev -0.0015026640 0.01154009\nlog_sel_trap_dev  0.0004395665 0.01154573\nlog_sel_trap_dev -0.0029860263 0.01164739\nlog_sel_trap_dev -0.0027566602 0.01177828\nlog_sel_trap_dev  0.0003561170 0.01203948\nlog_sel_trap_dev -0.0048162135 0.01191201\nlog_sel_trap_dev -0.0015658319 0.01215042\nlog_sel_gill_dev -0.0041582724 0.01226252\nlog_sel_gill_dev -0.0002705291 0.01225928\nlog_sel_gill_dev -0.0025338327 0.01223312\nlog_sel_gill_dev  0.0005423110 0.01221404\nlog_sel_gill_dev  0.0058886196 0.01222134\nlog_sel_gill_dev  0.0020670444 0.01211324\nlog_sel_gill_dev -0.0036680837 0.01207761\nlog_sel_gill_dev -0.0024575112 0.01202310\nlog_sel_gill_dev  0.0031302011 0.01203973\nlog_sel_gill_dev  0.0006097779 0.01204205\nlog_sel_gill_dev  0.0024228431 0.01204441\nlog_sel_gill_dev  0.0039619165 0.01205126\nlog_sel_gill_dev  0.0051610204 0.01203028\nlog_sel_gill_dev  0.0056649019 0.01201003\nlog_sel_gill_dev  0.0030549249 0.01201174\nlog_sel_gill_dev  0.0056853754 0.01203580\nlog_sel_gill_dev  0.0033185909 0.01205068\nlog_sel_gill_dev  0.0044495512 0.01204866\nlog_sel_gill_dev  0.0040917884 0.01204986\nlog_sel_gill_dev -0.0015399645 0.01206367\nlog_sel_gill_dev -0.0002888644 0.01208172\nlog_sel_gill_dev -0.0004544363 0.01210679\nlog_sel_gill_dev -0.0017694347 0.01214694\nlog_sel_gill_dev -0.0031269828 0.01219165\nlog_sel_gill_dev -0.0031392455 0.01221682\nlog_sel_gill_dev -0.0051214597 0.01225406\nlog_sel_gill_dev -0.0044302934 0.01228110\nlog_sel_gill_dev -0.0037082361 0.01233198\nlog_sel_gill_dev -0.0024263096 0.01235653\nlog_sel_gill_dev -0.0010351048 0.01239025\nlog_sel_gill_dev -0.0001106984 0.01238792\nlog_sel_gill_dev  0.0001907990 0.01242638\nlog_recr_dev      0.1268356207 0.29760292\nlog_recr_dev     -0.0016765868 0.24788771\nlog_recr_dev      0.0065919349 0.26995647\nlog_recr_dev      0.0481641466 0.32175168\nlog_recr_dev      0.1195534824 0.29541268\nlog_recr_dev      0.0887215396 0.27923483\nlog_recr_dev     -0.0356450823 0.24947302\nlog_recr_dev     -0.2250084971 0.69170624\nlog_recr_dev      0.0000000000 1.24586190\n\n\nNow save results here:\n\nreport = res$report$out # only export model results (e.g., catch, biomass, selectivity, etc.)"
+  },
+  {
+    "objectID": "run_RTMB.html#plot-results",
+    "href": "run_RTMB.html#plot-results",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "Plot results",
+    "text": "Plot results\n[In progress]"
+  },
+  {
+    "objectID": "run_RTMB.html#retrospective-analysis",
+    "href": "run_RTMB.html#retrospective-analysis",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "Retrospective analysis",
+    "text": "Retrospective analysis"
+  },
+  {
+    "objectID": "run_RTMB.html#admb-vs-tmb-names",
+    "href": "run_RTMB.html#admb-vs-tmb-names",
+    "title": "RTMB and GLAM walkthrough",
+    "section": "ADMB vs TMB names",
+    "text": "ADMB vs TMB names"
+  },
+  {
+    "objectID": "LWF_models.html",
+    "href": "LWF_models.html",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "Adopted text from Truesdell and Bence 2016.\nThis reviews the model design for the stock assessment models for lake whitefish in 1836 Treaty Waters. [Section descriptions].\n\n\n\n\n\nName\nDescription\nValue\n\n\n\n\n\\(y\\)\nYears of stock asssessment\n1985-2022\n\n\n\\(A\\)\nMax age (plus age)\n20\n\n\n\\(a^R\\)\nAge at recruitment\n3\n\n\n\\(sp\\)\nSpawning time\n0.838\n\n\n\\(sv\\)\nSurvey time\n0.5\n\n\n\n\n\n\nAdjustments to effort and catch \\[\nC^{trap}_y = \\dfrac{B^{trap}_y / CW^{trap}_y}{\\tau^{C_{trap}}}\n\\] \\[\nC^{gill}_y = \\dfrac{B^{gill}_y / CW^{gill}_y}{\\tau^{C_{gill}}}\n\\] where \\(\\tau^{C_{trap}}\\) and \\(\\tau^{C_{gill}}\\) are the harvest adjustment for under reporting for trap and gillnet, respectively.\n\\[\nE^{gill} = E^{gill} * \\tau^{E_{gill}}\n\\] where \\(\\tau^{E_{gill}}\\) is the adjustment in effort for changes over time.\n\n\n\nWeight-at-age the time of spawning was calculated from input weight-at-age observed in spring gill-net surveys, assuming exponential growth from the time of the survey until the time of spawning:\n\\[\n\\begin{array}{l}\nG_{y, a}=\\ln \\left(\\frac{W^{survey}_{y+1, a+1}}{W^{survey}_{y,a}}\\right) \\\\\nW^{pop}_{y, a} = W^{survey}_{y, a+1}*e^{-0.5 G_{y-1, a-1}} \\\\\nW^{spawn}_{y, a}= W^{survey}_{y, a+1} * e^{(sp - 0.5) * G_{y, a + 1}}\n\\end{array}\n\\]\n\n\n\nThis section describes the various functions for selectivity and catchaility (not affiliated with a specific fishery).\n\n\nThis estimates selectivity at age using length-at-age. Non tandardized selectivity \\(S^{*}\\) is:\n\\[\nS_{y, a}^{*}=\\frac{1}{\\sigma_{y} L_{y, a} \\sqrt{2 \\pi}} e^{-\\frac{(ln(L_{y, a})-\\mu^{2})}{2 {\\sigma_{y}^{S}}^{2}}}\n\\]\nwhere \\({\\sigma_{y}^{S}}^{2}\\) is the lognormal standard deviation for selectivity, \\(L_{y,a}\\) is the length at age, and \\(\\mu\\) is the lognormal mean (one of the estimated selectivity parameters). The selectivity is standardized by the lognormal probability distribution function at a length equal to \\(\\mu\\):\n\\[\nS^{\\mu}_y = \\dfrac{1}{\\sigma^{S}_y e^{\\mu} \\sqrt{2 \\pi}}\n\\]\nThe standardized selectivity is then: \\[\n\\begin{equation}\n\\tag{3.1.X}\nS_{y,a} = \\dfrac{S^{*}_{y,a}}{S^{\\mu}_y}\n\\label{eq:3.1.X}\n\\end{equation}\n\\]\nThe selectivity in most years is time-varying with respect to the parameter \\(\\sigma^{S}_y\\), which is freely estimated each year:\n\\[\n\\sigma_{y}^{S}=\\left\\{\\begin{array}{ll}\ne^{\\kappa_{y}} & \\text { if } y=1 \\\\\ne^{ln \\left(\\sigma_{y-1}^{S}\\right)+\\kappa_{y}} & \\text { if } y&gt;1\n\\end{array}\\right.\n\\] where \\(\\kappa_y\\) is freely estimated and a log-scale deviation \\(\\kappa\\) is estimated for each year.\nNote that \\(\\eqref{eq:3.1.X}\\) is maximized at \\(exp(\\mu - \\dfrac{{\\sigma^{S}}^2}{2})\\) so selectivity at age can exceed 1.\n\n\n\n\\[\nq_{y}=\\left\\{\\begin{array}{ll}\ne^{ln(q_{y})} & \\text { if } y=1 \\\\\ne^{ln(q_{y-1}) + ln(\\sigma^q_y)} & \\text { if } y&gt;1\n\\end{array}\\right.\n\\] where \\(\\sigma^q_y\\) is the log scale catchability deviation.\n\n\n\n\nThe total instantaneous mortality is the sum of fishing mortality and natural mortality.\n\\[\nZ_{y,a} = F^{gill}_{y,a} + F^{trap}_{y,a} + M + M^L_{y,a}\n\\] where \\(F^{gill}_{y,a}\\) represents fishing mortality from gillnet, \\(F^{trap}_{y,a}\\) represents fishing mortlaity from trapnet, \\(M\\) is natural mortality, and \\(M^L_{y,a}\\) is sea lamprey-induced natural mortality. The sea lamprey mortality rate were estimated externally to the stock assessment model.\nValues for natural mortality (\\(M\\)) were fitted during the modeling process with a prior derived from Pauly’s generalized equation that uses the von Bertalanffy growth parameters (\\(L_\\infty\\) and \\(k\\)), and annual mean water temperature (\\(T\\)) as described by Pauly (1980):\n\\[\nln(\\hat{M}) = -0.0238-0.277 L_\\infty + 0.655 ln(k) + 0.465 ln(T)\n\\] with length measured in mm and temperature in \\(^\\circ\\)C. Deviations from this prior were penalized during model fitting (see Likelihoods section).\n\n\n\n\n\n\\[\nln(R_y) = ln(R_{y-1}) + \\psi_y\n\\] with \\(ln(R_{y_0})\\) and the \\(\\psi_y\\) estimated as parameters. \\(\\psi_y\\) is a vector of deviations that describes how much log recruitment changed each year from the amount in the previous year (i.e., recruitment deviations). Using a random walk assumes correlation in year-to-year recruitment because the most likely value for \\(psi\\) is zero (Caroffino and Lenart, 2011), and thus large changes from year to year are penalized (see Likelihoods section).\n\n\n\n\nThe abundance-at-age at the start of each year is calculated recursively as the proportion of the cohort surviving (\\(e^{-Z}\\)) from the start of the previous year.\n\\[\nN_{y,a}=\\left\\{\\begin{array}{cc}R_y & a^R \\\\N_{y-1, a-1} e^{-Z_{y-1, a-1}} & a^R&lt;a&lt;A \\\\N_{y-1, a-1} e^{-Z_{y-1, a-1}} + N_{y-1, a} e^{Z_{y-1, a}} & a=A \\\\\\end{array}\\right.\n\\]\nwhere \\(R_y\\) is recruitment per time step and \\(Z_{y,a}\\) is the total instantaneous mortality rate.\n\n\n\nCatch-at-age for each fishery is estimated using Baranov’s equation: \\[\nC_{a, y}=\\frac{F_{a, y}}{Z_{a, y}} N_{a, y}\\left(1-e^{-Z_{a, y}}\\right)\n\\] where \\(C_{a, y}\\) is the catch-at-age. The models treated the total catch each year and the proportions of catch-at-age for each year as separate data sources.\n\n\n\nThe parameters in the models were adjusted during fitting so that they minimized an objective function. The objective function was: \\[\n-L=\\sum_{i=1}^{k}-\\rho_{i} L_{i}\n\\] where \\(k\\) is the number of components in the likelihood functions, \\(\\rho_i\\) is the weighting of component \\(i\\), and \\(L_i\\) was either the log-likelihood of data component \\(i\\) given specific parameter values or log prior densities for paraemters. The weights were defined prior to model fit for each component (\\(\\rho\\)). Different error distributions can be assumed for each of the likelihood components. This approach to estimation (fixing variances or ratio of variances and using point estimates obtained by minimizing the total likelihood) is known as “error in variables”, “penalized likelihood”, or “highest posterior density estimation” (Schnute, 1994; Wilberg et al, 2010).\n\n\nThe standard deviation for the prior distribtuion was fixed at a single value for whitefish models.\n\n\n\nAge composition \\[\nL_{i}=\\sum_{y} n_{i, y}^{*} \\sum_{a} p_{i, a, y} \\ln \\left(\\hat{p}_{i, a, y}\\right)\n\\] where \\(n_{i, y}^{*}\\) are the effective sample sizes, \\(p_{i, a, y}\\) are the observed proportions and \\(\\hat{p}_{i, a, y}\\) are the estimated proportions."
+  },
+  {
+    "objectID": "LWF_models.html#symbols",
+    "href": "LWF_models.html#symbols",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "Name\nDescription\nValue\n\n\n\n\n\\(y\\)\nYears of stock asssessment\n1985-2022\n\n\n\\(A\\)\nMax age (plus age)\n20\n\n\n\\(a^R\\)\nAge at recruitment\n3\n\n\n\\(sp\\)\nSpawning time\n0.838\n\n\n\\(sv\\)\nSurvey time\n0.5"
+  },
+  {
+    "objectID": "LWF_models.html#survey-data",
+    "href": "LWF_models.html#survey-data",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "Adjustments to effort and catch \\[\nC^{trap}_y = \\dfrac{B^{trap}_y / CW^{trap}_y}{\\tau^{C_{trap}}}\n\\] \\[\nC^{gill}_y = \\dfrac{B^{gill}_y / CW^{gill}_y}{\\tau^{C_{gill}}}\n\\] where \\(\\tau^{C_{trap}}\\) and \\(\\tau^{C_{gill}}\\) are the harvest adjustment for under reporting for trap and gillnet, respectively.\n\\[\nE^{gill} = E^{gill} * \\tau^{E_{gill}}\n\\] where \\(\\tau^{E_{gill}}\\) is the adjustment in effort for changes over time."
+  },
+  {
+    "objectID": "LWF_models.html#growth-weight-maturity-and-eggs",
+    "href": "LWF_models.html#growth-weight-maturity-and-eggs",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "Weight-at-age the time of spawning was calculated from input weight-at-age observed in spring gill-net surveys, assuming exponential growth from the time of the survey until the time of spawning:\n\\[\n\\begin{array}{l}\nG_{y, a}=\\ln \\left(\\frac{W^{survey}_{y+1, a+1}}{W^{survey}_{y,a}}\\right) \\\\\nW^{pop}_{y, a} = W^{survey}_{y, a+1}*e^{-0.5 G_{y-1, a-1}} \\\\\nW^{spawn}_{y, a}= W^{survey}_{y, a+1} * e^{(sp - 0.5) * G_{y, a + 1}}\n\\end{array}\n\\]"
+  },
+  {
+    "objectID": "LWF_models.html#selectivity-and-catchability",
+    "href": "LWF_models.html#selectivity-and-catchability",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "This section describes the various functions for selectivity and catchaility (not affiliated with a specific fishery).\n\n\nThis estimates selectivity at age using length-at-age. Non tandardized selectivity \\(S^{*}\\) is:\n\\[\nS_{y, a}^{*}=\\frac{1}{\\sigma_{y} L_{y, a} \\sqrt{2 \\pi}} e^{-\\frac{(ln(L_{y, a})-\\mu^{2})}{2 {\\sigma_{y}^{S}}^{2}}}\n\\]\nwhere \\({\\sigma_{y}^{S}}^{2}\\) is the lognormal standard deviation for selectivity, \\(L_{y,a}\\) is the length at age, and \\(\\mu\\) is the lognormal mean (one of the estimated selectivity parameters). The selectivity is standardized by the lognormal probability distribution function at a length equal to \\(\\mu\\):\n\\[\nS^{\\mu}_y = \\dfrac{1}{\\sigma^{S}_y e^{\\mu} \\sqrt{2 \\pi}}\n\\]\nThe standardized selectivity is then: \\[\n\\begin{equation}\n\\tag{3.1.X}\nS_{y,a} = \\dfrac{S^{*}_{y,a}}{S^{\\mu}_y}\n\\label{eq:3.1.X}\n\\end{equation}\n\\]\nThe selectivity in most years is time-varying with respect to the parameter \\(\\sigma^{S}_y\\), which is freely estimated each year:\n\\[\n\\sigma_{y}^{S}=\\left\\{\\begin{array}{ll}\ne^{\\kappa_{y}} & \\text { if } y=1 \\\\\ne^{ln \\left(\\sigma_{y-1}^{S}\\right)+\\kappa_{y}} & \\text { if } y&gt;1\n\\end{array}\\right.\n\\] where \\(\\kappa_y\\) is freely estimated and a log-scale deviation \\(\\kappa\\) is estimated for each year.\nNote that \\(\\eqref{eq:3.1.X}\\) is maximized at \\(exp(\\mu - \\dfrac{{\\sigma^{S}}^2}{2})\\) so selectivity at age can exceed 1.\n\n\n\n\\[\nq_{y}=\\left\\{\\begin{array}{ll}\ne^{ln(q_{y})} & \\text { if } y=1 \\\\\ne^{ln(q_{y-1}) + ln(\\sigma^q_y)} & \\text { if } y&gt;1\n\\end{array}\\right.\n\\] where \\(\\sigma^q_y\\) is the log scale catchability deviation."
+  },
+  {
+    "objectID": "LWF_models.html#mortalities",
+    "href": "LWF_models.html#mortalities",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "The total instantaneous mortality is the sum of fishing mortality and natural mortality.\n\\[\nZ_{y,a} = F^{gill}_{y,a} + F^{trap}_{y,a} + M + M^L_{y,a}\n\\] where \\(F^{gill}_{y,a}\\) represents fishing mortality from gillnet, \\(F^{trap}_{y,a}\\) represents fishing mortlaity from trapnet, \\(M\\) is natural mortality, and \\(M^L_{y,a}\\) is sea lamprey-induced natural mortality. The sea lamprey mortality rate were estimated externally to the stock assessment model.\nValues for natural mortality (\\(M\\)) were fitted during the modeling process with a prior derived from Pauly’s generalized equation that uses the von Bertalanffy growth parameters (\\(L_\\infty\\) and \\(k\\)), and annual mean water temperature (\\(T\\)) as described by Pauly (1980):\n\\[\nln(\\hat{M}) = -0.0238-0.277 L_\\infty + 0.655 ln(k) + 0.465 ln(T)\n\\] with length measured in mm and temperature in \\(^\\circ\\)C. Deviations from this prior were penalized during model fitting (see Likelihoods section)."
+  },
+  {
+    "objectID": "LWF_models.html#recruitment",
+    "href": "LWF_models.html#recruitment",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "\\[\nln(R_y) = ln(R_{y-1}) + \\psi_y\n\\] with \\(ln(R_{y_0})\\) and the \\(\\psi_y\\) estimated as parameters. \\(\\psi_y\\) is a vector of deviations that describes how much log recruitment changed each year from the amount in the previous year (i.e., recruitment deviations). Using a random walk assumes correlation in year-to-year recruitment because the most likely value for \\(psi\\) is zero (Caroffino and Lenart, 2011), and thus large changes from year to year are penalized (see Likelihoods section)."
+  },
+  {
+    "objectID": "LWF_models.html#numbers-at-age",
+    "href": "LWF_models.html#numbers-at-age",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "The abundance-at-age at the start of each year is calculated recursively as the proportion of the cohort surviving (\\(e^{-Z}\\)) from the start of the previous year.\n\\[\nN_{y,a}=\\left\\{\\begin{array}{cc}R_y & a^R \\\\N_{y-1, a-1} e^{-Z_{y-1, a-1}} & a^R&lt;a&lt;A \\\\N_{y-1, a-1} e^{-Z_{y-1, a-1}} + N_{y-1, a} e^{Z_{y-1, a}} & a=A \\\\\\end{array}\\right.\n\\]\nwhere \\(R_y\\) is recruitment per time step and \\(Z_{y,a}\\) is the total instantaneous mortality rate."
+  },
+  {
+    "objectID": "LWF_models.html#time-dynamic-calculations",
+    "href": "LWF_models.html#time-dynamic-calculations",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "Catch-at-age for each fishery is estimated using Baranov’s equation: \\[\nC_{a, y}=\\frac{F_{a, y}}{Z_{a, y}} N_{a, y}\\left(1-e^{-Z_{a, y}}\\right)\n\\] where \\(C_{a, y}\\) is the catch-at-age. The models treated the total catch each year and the proportions of catch-at-age for each year as separate data sources."
+  },
+  {
+    "objectID": "LWF_models.html#likelihoods",
+    "href": "LWF_models.html#likelihoods",
+    "title": "Lake Whitefish Model Description",
+    "section": "",
+    "text": "The parameters in the models were adjusted during fitting so that they minimized an objective function. The objective function was: \\[\n-L=\\sum_{i=1}^{k}-\\rho_{i} L_{i}\n\\] where \\(k\\) is the number of components in the likelihood functions, \\(\\rho_i\\) is the weighting of component \\(i\\), and \\(L_i\\) was either the log-likelihood of data component \\(i\\) given specific parameter values or log prior densities for paraemters. The weights were defined prior to model fit for each component (\\(\\rho\\)). Different error distributions can be assumed for each of the likelihood components. This approach to estimation (fixing variances or ratio of variances and using point estimates obtained by minimizing the total likelihood) is known as “error in variables”, “penalized likelihood”, or “highest posterior density estimation” (Schnute, 1994; Wilberg et al, 2010).\n\n\nThe standard deviation for the prior distribtuion was fixed at a single value for whitefish models.\n\n\n\nAge composition \\[\nL_{i}=\\sum_{y} n_{i, y}^{*} \\sum_{a} p_{i, a, y} \\ln \\left(\\hat{p}_{i, a, y}\\right)\n\\] where \\(n_{i, y}^{*}\\) are the effective sample sizes, \\(p_{i, a, y}\\) are the observed proportions and \\(\\hat{p}_{i, a, y}\\) are the estimated proportions."
+  }
+]

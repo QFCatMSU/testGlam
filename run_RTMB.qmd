@@ -1,0 +1,388 @@
+---
+title: "RTMB and GLAM walkthrough"
+format:
+  html:
+    toc: true
+    css: "https://qfcatmsu.github.io/css/presStyle.css"
+editor: visual
+---
+
+## Load packages and source R scripts
+
+Since this is not a R package, each necessary R script will need to be sourced.
+
+```{r, message = FALSE, warning = FALSE}
+library(RTMB)
+# for plotting
+# devtools::install_github("QFCatMSU/gg-qfc")
+library(ggqfc)
+library(tidyverse)
+library(ggplot2)
+library(here) # used to source R scripts
+# otherwise, can just use ("R/script_name") is using R projects
+
+# R scripts for running GLAM (see )
+source(here("R", "glam.R"))
+source(here("R", "run_glam.R"))
+source(here("R", "check_convergence.R"))
+source(here("R", "rename_data.R"))
+source(here("R", "prep_glam_data.R"))
+source(here("R", "prep_glam_pars.R"))
+source(here("R", "run_retro.R"))
+source(here("R", "run_peel.R"))
+```
+
+## Read in data
+
+If your data is within a Excel sheet, run `prep_glam_data.r`. This will convert the data from the Excel sheet to a format that can be for RTMB. It also converts the names from ADMB to RTMB.
+
+```{r, eval = FALSE}
+data_file_name = "MI4_LWF_DAT_10_23_2023"
+data = prep_glam_data(model_name = "MI4",
+                    data_file_name = data_file_name,
+                    sel_type_trap = "logistic",
+                    gill_fleet = TRUE,
+                    rec_fleet = FALSE,
+                    pauly_M = TRUE,
+                    recruit_model = "AR1")
+```
+
+*(In progress) from ADMB .dat file*
+
+For this demostration, we'll use the simulated data set (WF_sim_data.Rdata).
+
+```{r}
+load(here("data", "WF_sim_data.Rdata"))
+```
+
+## Define parameters
+
+Use `prep_glam_pars.r` to set up initial estimates for parameters. If a parameter is not being used in your model, put "NULL" in the argument.
+
+```{r}
+pars = prep_glam_pars(log_sig = -2,
+                        log_M = data$log_M_init,
+                        log_q_trap = -5,
+                        log_q_gill = -5,
+                        log_q_rec = NULL,
+                        log_q_trap_dev = numeric(data$n_years - 1),
+                        log_q_gill_dev = numeric(data$n_years - 1),
+                        log_q_rec_dev = NULL,
+                        log_sel_trap_p1 = 6.06,
+                        log_sel_trap_p2 = -2.9,
+                        log_sel_gill_p1 = -2.1,
+                        log_sel_gill_p2 = 1.82,
+                        log_sel_rec_p1 = NULL,
+                        log_sel_rec_p2 = NULL,
+                        log_sel_trap_dev = numeric(data$n_years - 1),
+                        log_sel_gill_dev = numeric(data$n_years - 1),
+                        log_sel_rec_dev = NULL,
+                        log_pop_init = rep(9, 4),
+                        log_recr_init = 12,
+                        log_recr_avg = 12,
+                        log_recr_dev = numeric(data$n_years - 1),
+                        acor = 0.5
+                        )
+```
+
+## Set up model run
+
+Notice that the data and pars lists are not in the argument of `run_glam.r`. This is how it is set up for RTMB. RTMB will pick up the list names based on what is defined within the RTMB function. You cannot use other names for the data list and parameters list. (*data* and *pars*).
+
+You use `run_glam.r` to conduct a model run. `nlminb` is being used to run RTMB. You can define the control list, which can help with improving model runs (e.g., increasing number of iterations; description is [here](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/nlminb)).
+
+\[hessian\]
+
+You can also run Newton steps, which helps with improving the gradient. Warning: use this only if the maximum gradient is close enough to the tolerance/threshold of convergence (max gradient \< 1e-3). This will not help if the model is not converged or the maximum gradient is too high (max gradient \> 0.1). Typically, three Newton steps (`n_newton = 3`) are recommended since they do not improve the gradients beyond that.
+
+\[fixed, random\]
+
+```{r}
+res = run_glam(nlminb_control = list(
+                      eval.max = 1e4,
+                      iter.max = 1e4
+                    ),
+                    hessian_run = FALSE,
+                    run_newton = TRUE,
+                    n_newton = 3,
+                    fixed_names = NULL,
+                    rand_names = NULL)
+```
+
+### Messages
+
+-   Model convergence: If the model did not converge, a warning will print: "*Model did not converge!*". If the model has good gradients, the hessian is invertible, and all the parameters are identifiable, then this will appear: "*Model diagnostics consistent with convergence.*"
+
+-   High gradients: If the maximum gradient is too high (\> 1e-3), a warning will print: "*Gradients are high, please improve optimization!*". If there are any parameters that do not meet this threshold, then a list of "bad" parameters will be given in `res$check$whichbad_param`.
+
+-   Hessian: If there are any NaNs in the Hessian matrix, then the hessian is not invertible \[?\] and the model has not converged. It will print: "*The hessian was not invertible*".
+
+-   Eigen: Parameters are considered identifiable... \[?\] If paramters are not identifiable, the hessian (and standard error) cannot be estimated for that parameter and the model has failed to converge. Sometimes, fixing the non-identifiable parameter improves the model run. *Warning*: This check will only run if the gradients met the threshold. It will not run if there are bad gradients.
+
+-   Standard error check: If the standard errors for the parameter estimates are high, a warning will print: "*Standard errors for some parameter estimates are high, consider checking this!*." This does not stop the model run, but considerations should be made to check the parameter estimates and rerun the model if the standard errors are unreasonable.
+
+```{r}
+# look if the model is converged and well estimated
+check = res$check
+check$convergence # 1 - non convergence; 0 - convergence
+check$message # type of convergence (relative is fine as long as the other checks below are good)
+check$max_gradient # maximum gradient
+check$whichbad_params # prints out which parameters do not meet threshold (1e-3). This should be NULL if there are no issues
+check$whichbad_eigen # prints out which parameters have bad eigen values. This should be NULL if there are no issues
+check$sdcheck # prints out which parameters have high standard errors
+
+```
+
+Now save results here:
+
+```{r}
+report = res$report$out # only export model results (e.g., catch, biomass, selectivity, etc.)
+```
+
+## Plot results
+
+\[In progress\]
+
+```{r, echo = FALSE}
+ramp = colorRamp(c("darkorange", "purple4"))
+col_vec = rgb(ramp(seq(0, 1, length = data$n_years)), max = 255)
+# catch
+RTMB_catch_trap = report$ct_trap
+RTMB_catch_gill = report$ct_gill
+RTMB_obs_catch_trap = (data$biomass_trap / data$mn_wt_trap) / data$harv_trap_adj
+RTMB_obs_catch_gill = (data$biomass_gill / data$mn_wt_gill) / data$harv_gill_adj
+par(mar = c(0.3, 3, 2, 3), mfrow = c(2,1), oma = c(3,0,0,0))
+plot(data$years, RTMB_catch_trap, ylim = range(RTMB_catch_trap),
+    type = "n", xaxt = "n", xlab = "Year", ylab = "", main = "Catch (Trapnet)")
+    lines(data$years, RTMB_catch_trap)
+    points(data$years, RTMB_obs_catch_trap, pch = 19, col = "red")
+par(mar = c(1, 3, 2, 3))
+plot(data$years, RTMB_catch_gill, ylim = range(RTMB_catch_gill),
+    type = "n", xlab = "Year", ylab = "", main = "Catch (Gillnet)")
+    lines(data$years, RTMB_catch_gill)
+    points(data$years, RTMB_obs_catch_gill, pch = 19, col = "red")
+```
+
+```{r, echo = FALSE}
+# mortalities
+mort_tab = matrix(NA, nrow = 3, ncol = data$n_years)
+rownames(mort_tab) = c("M", "FT", "FG")
+colnames(mort_tab) = data$years
+mort_tab[1,] = rep(report$M, data$n_years)
+mort_tab[2,] = apply(report$FM_trap, 1, mean)
+mort_tab[3,] = apply(report$FM_gill, 1, mean)
+
+col_bar <- colors()[c(23,89,12)]
+
+par(mar = c(4.5,4.5,1,7.3))
+barplot(mort_tab, col = col_bar, xlab = "Years", ylab = expression("Mortality rate (" ~ Year^-1~")"))
+legend("bottomright", legend = c("Natural mortality", "Trapnet", "Gillnet"),
+    inset = c(-0.4, 0.27), bty = "n", fill = col_bar, xpd = NA, cex = 0.9)
+```
+
+```{r, echo = FALSE}
+# selectivity
+col_vec = rgb(ramp(seq(0, 1, length = data$n_ages)), max = 255)
+# trapnet
+par(mar = c(0.3, 3, 2, 3), mfrow = c(2,1), oma = c(3,0,0,0))
+plot(data$ages, seq(0, max(report$sel_trap), length.out = length(data$ages)), 
+    type = "n", ylim = c(0, max(report$sel_trap)), cex.main = 0.9, cex.axis = 0.8,
+    main = "Selectivity at age (trap net)", ylab = "", xlab = "", xaxt = "n")
+for(i in 1:length(data$years)) lines(data$ages, report$sel_trap[i,], col = col_vec[i])
+# gillnet
+par(mar = c(1, 3, 2, 3))
+plot(data$ages, seq(0, max(report$sel_gill), length.out = length(data$ages)), 
+    type = "n", ylim = c(0, max(report$sel_gill)), cex.main = 0.9, cex.axis = 0.8,
+    main = "Selectivity at age (gill net)", ylab = "", xlab = "", xaxt = "n")
+for(i in 1:length(data$years)) lines(data$ages, report$sel_gill[i,], col = col_vec[i])
+axis(1, seq(4,20,4), cex.axis = 0.8)
+mtext("Ages", side = 1, cex = 0.9, adj = 0.5, line = 1.5, outer = TRUE)
+```
+
+```{r, echo = FALSE}
+# Age composition fits
+obs_pa_trap = data$obs_pa_trap
+colnames(obs_pa_trap) = data$fage:data$lage
+rownames(obs_pa_trap) = data$fyear:data$lyear
+pa_trap = report$pa_trap
+colnames(pa_trap) = data$fage:data$lage
+rownames(pa_trap) = data$fyear:data$lyear
+obs_pa_trap = obs_pa_trap |>
+            as_tibble(rownames = "year") |>
+            gather(colnames(obs_pa_trap), key = "age", value = "value") 
+obs_pa_trap$age = as.numeric(obs_pa_trap$age)
+pa_trap = pa_trap |>
+            as_tibble(rownames = "year") |>
+            gather(colnames(pa_trap), key = "age", value = "value") 
+pa_trap$age = as.numeric(pa_trap$age)
+pa_trap1 = pa_trap |>
+                filter(year %in% as.character(1985:2004))
+pa_trap2 = pa_trap |>
+                filter(year %in% as.character(2005:2022))
+
+p1 <- obs_pa_trap |> filter(year %in% as.character(1985:2004)) |>
+        ggplot(aes(x = age, y = value, group = year)) +
+            geom_area() + 
+            geom_line() + geom_point() +
+            facet_wrap(~year) +
+            scale_x_continuous(breaks = c(4,8,12,16)) +
+            geom_line(data= pa_trap1, color = "red") +
+            labs(title = "Trapnet age comp 1985-2004") +
+            theme_qfc()
+            
+p2 <- obs_pa_trap |> filter(year %in% as.character(2005:2022)) |>
+        ggplot(aes(x = age, y = value, group = year)) +
+            geom_area() + 
+            geom_line() + geom_point() +
+            facet_wrap(~year) +
+            scale_x_continuous(breaks = c(4,8,12,16)) +
+            geom_line(data= pa_trap2, color = "red") +
+            labs(title = "Trapnet age comp 2005-2022") +
+            theme_qfc()
+
+obs_pa_gill = data$obs_pa_gill
+colnames(obs_pa_gill) = data$fage:data$lage
+rownames(obs_pa_gill) = data$fyear:data$lyear
+pa_gill = report$pa_gill
+colnames(pa_gill) = data$fage:data$lage
+rownames(pa_gill) = data$fyear:data$lyear
+obs_pa_gill = obs_pa_gill |>
+            as_tibble(rownames = "year") |>
+            gather(colnames(obs_pa_gill), key = "age", value = "value") 
+obs_pa_gill$age = as.numeric(obs_pa_gill$age)
+pa_gill = pa_gill |>
+            as_tibble(rownames = "year") |>
+            gather(colnames(pa_gill), key = "age", value = "value") 
+pa_gill$age = as.numeric(pa_gill$age)
+pa_gill1 = pa_gill |>
+                filter(year %in% as.character(1985:2004))
+pa_gill2 = pa_gill |>
+                filter(year %in% as.character(2005:2022))
+
+p3 <- obs_pa_gill |> filter(year %in% as.character(1985:2004)) |>
+        ggplot(aes(x = age, y = value, group = year)) +
+            geom_area() + 
+            geom_line() + geom_point() +
+            facet_wrap(~year) +
+            scale_x_continuous(breaks = c(4,8,12,16)) +
+            geom_line(data= pa_gill1, color = "red") +
+            labs(title = "Gillnet age comp 1985-2004") +
+            theme_qfc()
+            
+p4 <- obs_pa_gill |> filter(year %in% as.character(2005:2022)) |>
+        ggplot(aes(x = age, y = value, group = year)) +
+            geom_area() + 
+            geom_line() + geom_point() +
+            facet_wrap(~year) +
+            scale_x_continuous(breaks = c(4,8,12,16)) +
+            geom_line(data= pa_gill2, color = "red") +
+            labs(title = "Gillnet age comp 2005-2022") +
+            theme_qfc()
+
+print(p1)
+print(p2)
+print(p3)
+print(p4)
+```
+
+```{r, echo = FALSE, eval=FALSE}
+# Age comp residuals
+comp_residt = report$resid_pa_trap
+colnames(comp_residt) = data$fage:data$lage
+rownames(comp_residt) = data$fyear:data$lyear
+comp_residt = comp_residt |>
+            as_tibble(rownames = "year") |>
+            gather(colnames(comp_residt), key = "age", value = "value") 
+comp_residt$age = as.numeric(comp_residt$age)
+comp_residt$year = as.numeric(comp_residt$year)
+comp_residt = comp_residt |>
+                mutate(direct = ifelse(value > 0, "pos", "neg"))
+comp_residt1 = comp_residt |> filter(direct == "neg")
+comp_residt1$value = abs(comp_residt1$value)
+comp_residt2 = comp_residt |> filter(direct == "pos")
+comp_residt2$value = abs(comp_residt2$value)
+
+b1 <- ggplot() +
+        geom_point(data = comp_residt1, aes(x = year, y = age, size = value), alpha = 0.75, colour = "red") +
+        geom_point(data = comp_residt2, aes(x = year, y = age, size = value), alpha = 0.75, colour = "blue") +
+        ylab("Age") +
+        labs(title = "Trapnet") +
+        scale_x_continuous("Year", seq(1985, 2020, 5)) +
+        scale_fill_identity(name = "Proportion at age", guide = "legend") +
+        theme_qfc() + theme(legend.position =  "none")
+
+b2 <- comp_residt |> filter(age %in% 4:12) |>
+        ggplot(aes(x = year, y = value)) +
+            geom_point() +
+            facet_wrap(~age, ncol = 3) +
+            ylab("Standardized Residuals") +
+            labs(title = "Trapnet") +
+            geom_hline(yintercept = 0) +
+            scale_x_continuous("Year", seq(1990, 2020, 10)) +
+            theme_qfc()
+
+b3 <- comp_residt |> filter(age %in% 13:20) |>
+        ggplot(aes(x = year, y = value)) +
+            geom_point() +
+            facet_wrap(~age, ncol = 3) +
+            ylab("Standardized Residuals") +
+            labs(title = "Trapnet") +
+            geom_hline(yintercept = 0) +
+            scale_x_continuous("Year", seq(1990, 2020, 10)) +
+            theme_qfc()
+
+comp_residg = report$resid_pa_gill
+colnames(comp_residg) = data$fage:data$lage
+rownames(comp_residg) = data$fyear:data$lyear
+comp_residg = comp_residg |>
+            as_tibble(rownames = "year") |>
+            gather(colnames(comp_residg), key = "age", value = "value") 
+comp_residg$age = as.numeric(comp_residg$age)
+comp_residg$year = as.numeric(comp_residg$year)
+comp_residg = comp_residg |>
+                mutate(direct = ifelse(value > 0, "pos", "neg"))
+comp_residg1 = comp_residg |> filter(direct == "neg")
+comp_residg1$value = abs(comp_residg1$value)
+comp_residg2 = comp_residg |> filter(direct == "pos")
+comp_residg2$value = abs(comp_residg2$value)
+
+b4 <- ggplot() +
+        geom_point(data = comp_residg1, aes(x = year, y = age, size = value), alpha = 0.75, colour = "red") +
+        geom_point(data = comp_residg2, aes(x = year, y = age, size = value), alpha = 0.75, colour = "blue") +
+        ylab("Age") +
+        labs(title = "Gillnet") +
+        scale_x_continuous("Year", seq(1985,2020, 5)) +
+        scale_fill_identity(name = "Proportion at age", guide = "legend") +
+        theme_qfc() + theme(legend.position =  "none")
+
+b5 <- comp_residg |> filter(age %in% 4:12) |>
+        ggplot(aes(x = year, y = value)) +
+            geom_point() +
+            facet_wrap(~age, ncol = 3) +
+            ylab("Standardized Residuals") +
+            labs(title = "Gillnet") +
+            geom_hline(yintercept = 0) +
+            scale_x_continuous("Year", seq(1990, 2020, 10)) +
+            theme_qfc()
+
+b6 <- comp_residg |> filter(age %in% 13:20) |>
+        ggplot(aes(x = year, y = value)) +
+            geom_point() +
+            facet_wrap(~age, ncol = 3) +
+            ylab("Standardized Residuals") +
+            labs(title = "Gillnet") +
+            geom_hline(yintercept = 0) +
+            scale_x_continuous("Year", seq(1990, 2020, 10)) +
+            theme_qfc()
+
+print(b1)
+print(b2)
+print(b3)
+print(b4)
+print(b5)
+print(b6)
+```
+
+## Retrospective analysis
+
+## ADMB vs TMB names

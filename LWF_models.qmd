@@ -1,0 +1,150 @@
+---
+title: "Lake Whitefish Model Description"
+format:
+  html:
+    toc: true
+    css: "https://qfcatmsu.github.io/css/presStyle.css"
+editor: visual
+---
+
+# Lake Whitefish Statistical Catch at Age Model
+
+Adopted text from [Truesdell and Bence 2016](https://www.canr.msu.edu/qfc/publications/pdf-techreports/2016-techreports/T2016-01.pdf).
+
+This reviews the model design for the stock assessment models for lake whitefish in 1836 Treaty Waters. \[Section descriptions\].
+
+## 0. Symbols
+
+| Name  | Description                | Value     |
+|-------|----------------------------|-----------|
+| $y$   | Years of stock asssessment | 1985-2022 |
+| $A$   | Max age (plus age)         | 20        |
+| $a^R$ | Age at recruitment         | 3         |
+| $sp$  | Spawning time              | 0.838     |
+| $sv$  | Survey time                | 0.5       |
+
+## 1. Survey data
+
+Adjustments to effort and catch $$
+C^{trap}_y = \dfrac{B^{trap}_y / CW^{trap}_y}{\tau^{C_{trap}}}
+$$ $$
+C^{gill}_y = \dfrac{B^{gill}_y / CW^{gill}_y}{\tau^{C_{gill}}}
+$$ where $\tau^{C_{trap}}$ and $\tau^{C_{gill}}$ are the harvest adjustment for under reporting for trap and gillnet, respectively.
+
+$$
+E^{gill} = E^{gill} * \tau^{E_{gill}}
+$$ where $\tau^{E_{gill}}$ is the adjustment in effort for changes over time.
+
+## 2. Growth, weight, maturity, and eggs
+
+Weight-at-age the time of spawning was calculated from input weight-at-age observed in spring gill-net surveys, assuming exponential growth from the time of the survey until the time of spawning:
+
+$$
+\begin{array}{l}
+G_{y, a}=\ln \left(\frac{W^{survey}_{y+1, a+1}}{W^{survey}_{y,a}}\right) \\
+W^{pop}_{y, a} = W^{survey}_{y, a+1}*e^{-0.5 G_{y-1, a-1}} \\
+W^{spawn}_{y, a}= W^{survey}_{y, a+1} * e^{(sp - 0.5) * G_{y, a + 1}}
+\end{array} 
+$$
+
+## 3. Selectivity and catchability
+
+This section describes the various functions for selectivity and catchaility (not affiliated with a specific fishery).
+
+### 3.1. Lognormal selectivity
+
+This estimates selectivity at age using length-at-age. Non tandardized selectivity $S^{*}$ is:
+
+$$
+S_{y, a}^{*}=\frac{1}{\sigma_{y} L_{y, a} \sqrt{2 \pi}} e^{-\frac{(ln(L_{y, a})-\mu^{2})}{2 {\sigma_{y}^{S}}^{2}}}
+$$
+
+where ${\sigma_{y}^{S}}^{2}$ is the lognormal standard deviation for selectivity, $L_{y,a}$ is the length at age, and $\mu$ is the lognormal mean (one of the estimated selectivity parameters). The selectivity is standardized by the lognormal probability distribution function at a length equal to $\mu$:
+
+$$
+S^{\mu}_y = \dfrac{1}{\sigma^{S}_y e^{\mu} \sqrt{2 \pi}}
+$$
+
+The standardized selectivity is then: $$
+\begin{equation} 
+\tag{3.1.X}
+S_{y,a} = \dfrac{S^{*}_{y,a}}{S^{\mu}_y}
+\label{eq:3.1.X}
+\end{equation}
+$$
+
+The selectivity in most years is time-varying with respect to the parameter $\sigma^{S}_y$, which is freely estimated each year:
+
+$$
+\sigma_{y}^{S}=\left\{\begin{array}{ll}
+e^{\kappa_{y}} & \text { if } y=1 \\
+e^{ln \left(\sigma_{y-1}^{S}\right)+\kappa_{y}} & \text { if } y>1
+\end{array}\right.
+$$ where $\kappa_y$ is freely estimated and a log-scale deviation $\kappa$ is estimated for each year.
+
+Note that \eqref{eq:3.1.X} is maximized at $exp(\mu - \dfrac{{\sigma^{S}}^2}{2})$ so selectivity at age can exceed 1.
+
+### 3.2. Random walk catchability
+
+$$
+q_{y}=\left\{\begin{array}{ll}
+e^{ln(q_{y})} & \text { if } y=1 \\
+e^{ln(q_{y-1}) + ln(\sigma^q_y)} & \text { if } y>1
+\end{array}\right.
+$$ where $\sigma^q_y$ is the log scale catchability deviation.
+
+## 4. Mortalities
+
+The total instantaneous mortality is the sum of fishing mortality and natural mortality.
+
+$$
+Z_{y,a} = F^{gill}_{y,a} + F^{trap}_{y,a} + M + M^L_{y,a}
+$$ where $F^{gill}_{y,a}$ represents fishing mortality from gillnet, $F^{trap}_{y,a}$ represents fishing mortlaity from trapnet, $M$ is natural mortality, and $M^L_{y,a}$ is sea lamprey-induced natural mortality. The sea lamprey mortality rate were estimated externally to the stock assessment model.
+
+Values for natural mortality ($M$) were fitted during the modeling process with a prior derived from Pauly's generalized equation that uses the von Bertalanffy growth parameters ($L_\infty$ and $k$), and annual mean water temperature ($T$) as described by Pauly (1980):
+
+$$
+ln(\hat{M}) = -0.0238-0.277 L_\infty + 0.655 ln(k) + 0.465 ln(T)
+$$ with length measured in mm and temperature in $^\circ$C. Deviations from this prior were penalized during model fitting (see [Likelihoods](#likelihoods) section).
+
+## 5. Recruitment
+
+### 5. Random walk
+
+$$
+ln(R_y) = ln(R_{y-1}) + \psi_y
+$$ with $ln(R_{y_0})$ and the $\psi_y$ estimated as parameters. $\psi_y$ is a vector of deviations that describes how much log recruitment changed each year from the amount in the previous year (i.e., recruitment deviations). Using a random walk assumes correlation in year-to-year recruitment because the most likely value for $psi$ is zero (Caroffino and Lenart, 2011), and thus large changes from year to year are penalized (see [Likelihoods](#likelihoods) section).
+
+## 6. Numbers at age
+
+The abundance-at-age at the start of each year is calculated recursively as the proportion of the cohort surviving ($e^{-Z}$) from the start of the previous year.
+
+$$
+N_{y,a}=\left\{\begin{array}{cc}R_y & a^R \\N_{y-1, a-1} e^{-Z_{y-1, a-1}} & a^R<a<A \\N_{y-1, a-1} e^{-Z_{y-1, a-1}} + N_{y-1, a} e^{Z_{y-1, a}} & a=A \\\end{array}\right.
+$$
+
+where $R_y$ is recruitment per time step and $Z_{y,a}$ is the total instantaneous mortality rate.
+
+## 7. Time-dynamic calculations
+
+Catch-at-age for each fishery is estimated using Baranov's equation: $$
+C_{a, y}=\frac{F_{a, y}}{Z_{a, y}} N_{a, y}\left(1-e^{-Z_{a, y}}\right)
+$$ where $C_{a, y}$ is the catch-at-age. The models treated the total catch each year and the proportions of catch-at-age for each year as separate data sources.
+
+## 8. Likelihoods {#likelihoods}
+
+The parameters in the models were adjusted during fitting so that they minimized an objective function. The objective function was: $$
+-L=\sum_{i=1}^{k}-\rho_{i} L_{i}
+$$ where $k$ is the number of components in the likelihood functions, $\rho_i$ is the weighting of component $i$, and $L_i$ was either the log-likelihood of data component $i$ given specific parameter values or log prior densities for paraemters. The weights were defined prior to model fit for each component ($\rho$). Different error distributions can be assumed for each of the likelihood components. This approach to estimation (fixing variances or ratio of variances and using point estimates obtained by minimizing the total likelihood) is known as "error in variables", "penalized likelihood", or "highest posterior density estimation" (Schnute, 1994; Wilberg et al, 2010).
+
+### 8.1 Natural mortality
+
+The standard deviation for the prior distribtuion was fixed at a single value for whitefish models.
+
+### 8. Age composition
+
+Age composition $$
+L_{i}=\sum_{y} n_{i, y}^{*} \sum_{a} p_{i, a, y} \ln \left(\hat{p}_{i, a, y}\right)
+$$ where $n_{i, y}^{*}$ are the effective sample sizes, $p_{i, a, y}$ are the observed proportions and $\hat{p}_{i, a, y}$ are the estimated proportions.
+
+## References
