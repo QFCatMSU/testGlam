@@ -7,6 +7,14 @@ format:
 editor: visual
 ---
 
+<!-- Sets the Working directory to be RStudio Project folder 
+     (this is not the default in KnitR) -->
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr") 
+## setting working directory
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
 ## Load packages and source R scripts
 
 Since this is not a R package, each necessary R script will need to be sourced.
@@ -23,10 +31,10 @@ library(here) # used to source R scripts
 
 # R scripts for running GLAM (see )
 source("R/glam.R")
-source(here("R", "run_glam.R"))
-source(here("R", "check_convergence.R"))
-source(here("R", "rename_data.R"))
-source(here("R", "prep_glam_data.R"))
+source("R/run_glam.R")
+source(here("R/check_convergence.R"))
+source(here("R/rename_data.R"))
+source(here("R/prep_glam_data.R"))
 source(here("R", "prep_glam_pars.R"))
 source(here("R", "run_retro.R"))
 source(here("R", "run_peel.R"))

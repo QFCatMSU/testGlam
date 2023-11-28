@@ -7,5 +7,8 @@
   },
   "run_RTMB.qmd": {
     "run_RTMB.html": "8598da76"
+  },
+  "test/run_RTMB.qmd": {
+    "run_RTMB.html": "c0ad0711"
   }
 }
